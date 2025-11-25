@@ -22,5 +22,6 @@ window.chessSpyState = {
   tempHintActive: false,
   tempHintTimeout: null,
   activeArrows: new Map(),
-  multiPVRawScores: {} 
+  multiPVRawScores: {},
+  threatPVRawScores: {}
 };
