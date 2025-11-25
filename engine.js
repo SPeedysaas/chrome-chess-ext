@@ -56,20 +56,20 @@ window.handleMainEngine = function(line) {
     }
   } else if (line.includes('score mate')) {
     const match = line.match(/score mate (-?\d+)/);
-    if(match) {
+    if(match) { 
         const moves = parseInt(match[1]);
         isMate = true;
         displayScore = moves; // Keep real move count for UI (M1, M5)
-
+        
         // Convert to huge number for Math comparison
-        if(moves > 0) mathScore = 10000 - moves;
+        if(moves > 0) mathScore = 10000 - moves; 
         else mathScore = -10000 - moves;
     }
   }
 
   if (mathScore !== null) {
       state.multiPVRawScores[mpv] = mathScore;
-
+      
       // Update Bar with the DISPLAY score
       if (mpv === 1 && typeof window.updateBar === "function") {
           let uiVal = displayScore;
@@ -85,16 +85,16 @@ window.handleMainEngine = function(line) {
     if (mpv <= maxLines) {
       const parts = line.split(' pv ')[1].trim().split(' ');
       if (parts.length > 0) {
-        const bestMove = parts[0];
-        if (mpv === 1) state.lastBestMove = bestMove;
+        const bestMove = parts[0]; 
+        if (mpv === 1) state.lastBestMove = bestMove; 
 
         let badge = null;
-        if (mpv === 1 && isForced) badge = "!";
+        if (mpv === 1 && isForced) badge = "!"; 
         else if (cfg.lines > 1) badge = mpv.toString();
 
         if (typeof window.shouldDrawArrow === "function") {
             window.shouldDrawArrow(bestMove, mpv, false, false, badge, 50, isForced);
-
+            
             if (mpv === 1 && cfg.showResponse && parts.length > 1) {
                window.shouldDrawArrow(parts[1], mpv, true, false, null, 10, false);
             }
@@ -108,22 +108,16 @@ window.handleThreatEngine = function(line) {
   const cfg = window.chessSpyConfig;
   const state = window.chessSpyState;
 
-  let mpv = 1;
-  if (line.includes('multipv')) {
-    const match = line.match(/multipv (\d+)/);
-    if(match) mpv = parseInt(match[1]);
-  }
-
-  if (mpv > 2) return;
-
-  let score = 0, isMate = false;
-  if (line.includes('score mate')) { isMate = true; score = 10000; }
+  if (line.includes(' pv ') && (line.includes('multipv 1') || !line.includes('multipv'))) {
+    
+    let score = 0, isMate = false;
+    if (line.includes('score mate')) { isMate = true; score = 10000; }
     else {
       const match = line.match(/score cp (-?\d+)/);
       if (match) score = parseInt(match[1]);
     }
 
-    let impact = score;
+    let impact = score; 
     if (!isMate && state.multiPVRawScores[1] !== undefined) {
         const baseline = state.multiPVRawScores[1] * -1;
         impact = score - baseline;
@@ -135,33 +129,18 @@ window.handleThreatEngine = function(line) {
         return;
     }
 
-    // Wait for the top 2 threat lines to evaluate if the threat is forced.
-    state.threatPVRawScores[mpv] = score;
-    if (mpv === 1) return;
-
-    const isForced = checkSingularity(state.threatPVRawScores);
-    if (!isForced) {
-        if (window.removeThreatArrows) window.removeThreatArrows();
-        return;
-    }
-
     const parts = line.split(' pv ')[1].trim().split(' ');
-
-    if (parts.length < 2) {
-        if (window.removeThreatArrows) window.removeThreatArrows();
-        return;
-    }
-
+    
     // 2. AGGRESSIVE FILTER
     if (cfg.onlyAggressiveThreats) {
-       let isAggressive = isMate;
+       let isAggressive = isMate; 
        let captureVal = 0;
        let isPawnPush = false;
 
        if (parts.length > 0) {
           const fromSq = parts[0].substring(0, 2);
           const toSq = parts[0].substring(2, 4);
-
+          
           if(window.getPieceAt) {
              const p = window.getPieceAt(fromSq);
              if(getPieceValue(p) === 1) isPawnPush = true;
@@ -175,7 +154,7 @@ window.handleThreatEngine = function(line) {
              isAggressive = true;
           }
        }
-
+       
        if (isPawnPush && !isMate && impact < 300) isAggressive = false;
        if (!isMate && captureVal === 1 && impact < 250) isAggressive = false;
 
@@ -185,17 +164,17 @@ window.handleThreatEngine = function(line) {
 
        if (!isAggressive) {
            if(window.removeThreatArrows) window.removeThreatArrows();
-           return;
+           return; 
        }
     }
 
-    const limit = parseInt(cfg.tacticsDepth) + 1;
+    const limit = parseInt(cfg.tacticsDepth) + 1; 
     const isUserWhite = (state.userColor === 'w');
     let firstMoveValue = 0;
     const dirtySquares = new Set();
 
     for (let i = 0; i < parts.length && i < limit; i++) {
-      if (i % 2 !== 0) continue;
+      if (i % 2 !== 0) continue; 
 
       const move = parts[i];
       const fromSq = move.substring(0, 2);
@@ -204,9 +183,9 @@ window.handleThreatEngine = function(line) {
       if (i === 0) {
         if (typeof window.getPieceAt !== 'function') return;
         const piece = window.getPieceAt(fromSq);
-        if (!piece) return;
+        if (!piece) return; 
         const isWhitePiece = (piece === piece.toUpperCase());
-        if (isUserWhite === isWhitePiece) return;
+        if (isUserWhite === isWhitePiece) return; 
 
         const targetPiece = window.getPieceAt(toSq);
         if (targetPiece) {
@@ -215,12 +194,29 @@ window.handleThreatEngine = function(line) {
         }
       }
 
+      if (i > 0) {
+        if (firstMoveValue >= 3 && !isMate) continue;
+
+        let nextValue = 0;
+        if (!dirtySquares.has(toSq) && typeof window.getPieceAt === 'function') {
+           const target = window.getPieceAt(toSq);
+           if (target) {
+              const isTargetWhite = (target === target.toUpperCase());
+              if (isTargetWhite === isUserWhite) nextValue = getPieceValue(target);
+           }
+        }
+        
+        const isMajor = nextValue >= 3;
+        const isEscalation = nextValue > firstMoveValue;
+        if (!isMate && !isMajor && !isEscalation) continue;
+      }
+
       dirtySquares.add(fromSq);
       dirtySquares.add(toSq);
 
       const stepNum = ((i / 2) + 1).toString();
       if (typeof window.drawArrow === "function") {
-          window.drawArrow(move, 99 + i, false, false, stepNum, 100);
+          window.drawArrow(move, 99 + i, false, false, stepNum, 100); 
       }
     }
   }
