@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    :root { --primary: #4cd964; --bg: #1e1e1e; --panel: #2c2c2e; --text: #fff; }
+    body { width: 340px; padding: 15px; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; margin: 0; }
+    .control-group { background: var(--panel); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .col { flex: 1; }
+    label { font-size: 11px; color: #aaa; display: block; margin-bottom: 5px; font-weight: 600; text-transform: uppercase; }
+    h3 { margin: 0 0 15px 0; text-align: center; font-weight: 700; font-size: 16px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    select, input[type="number"] { width: 100%; padding: 8px; background: #3a3a3c; color: #fff; border: none; border-radius: 6px; outline: none; cursor: pointer; font-size: 13px; }
+    input[type="color"] { -webkit-appearance: none; border: none; width: 100%; height: 30px; border-radius: 6px; padding: 0; background: none; cursor: pointer; }
+    .slider-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .slider-val { color: var(--primary); font-size: 12px; font-weight: bold; }
+    input[type=range] { width: 100%; -webkit-appearance: none; background: transparent; margin: 0; }
+    input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #444; border-radius: 2px; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: var(--primary); margin-top: -6px; cursor: pointer; }
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+    .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(16px); }
+    .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+    button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+    .btn-start { background: var(--primary); color: #000; }
+    .btn-stop { background: #ff3b30; color: #fff; }
+  </style>
+</head>
+<body>
+  <h3>♟️ ChessSpy Ultimate</h3>
+  <div class="control-group">
+    <div class="row">
+      <div class="col"><label>Orientation</label><select id="orientation"><option value="auto">Auto-Detect</option><option value="white">Force White</option><option value="black">Force Black</option></select></div>
+      <div class="col"><label>Show Moves For</label><select id="arrowMode"><option value="both">Both</option><option value="me">Me Only</option><option value="opponent">Opponent Only</option></select></div>
+    </div>
+    <div class="row" style="margin-top:8px;">
+        <div class="col"><label>Hint Duration</label><select id="hintDuration"><option value="infinite">Permanent</option><option value="3000">Fade 3s</option><option value="5000">Fade 5s</option></select></div>
+        <div class="col"><div style="margin-top:18px;" class="toggle-row"><span style="font-size:11px; color:#ddd;">Reveal Btn 💡</span><label class="switch"><input type="checkbox" id="showHintBtn"><span class="slider"></span></label></div></div>
+    </div>
+    <div class="toggle-row"><span style="font-size:12px; color:#b19cd9;">Show "Human" Move</span><label class="switch"><input type="checkbox" id="showHuman"><span class="slider"></span></label></div>
+  </div>
+  <div class="control-group">
+    <div class="row">
+      <div class="col"><label>Bar Preset</label><select id="barPreset"><option value="standard">Standard</option><option value="chesscom">Chess.com</option><option value="rounded">Rounded</option><option value="minimal">Minimal</option></select></div>
+      <div class="col"><label>Number Pos</label><select id="barTextPos"><option value="inside">Inside</option><option value="outside">Outside</option></select></div>
+    </div>
+    <div class="row" style="margin-top: 10px;">
+      <div class="col"><label>Bar Side</label><select id="barSide"><option value="left">Left</option><option value="right">Right</option></select></div>
+      <div class="col" style="padding-top: 8px;">
+        <div class="slider-header" style="margin-bottom: 0;"><label style="margin:0">Width</label><span id="widthVal" class="slider-val">20px</span></div>
+        <input type="range" id="barWidth" min="8" max="60" value="20">
+      </div>
+    </div>
+  </div>
+  <div class="control-group">
+    <label>Visual Theme</label>
+    <select id="themePreset" style="margin-bottom: 10px;">
+      <option value="custom">Custom...</option>
+      <option value="classic">Stockfish Classic</option>
+      <option value="electric">Neon</option>
+      <option value="chesscom">Chess.com</option>
+      <option value="mono">Monochrome</option>
+    </select>
+    <div class="row">
+      <div class="col"><label>Best</label><input type="color" id="colBest" value="#76b852"></div>
+      <div class="col"><label>Alt</label><input type="color" id="colAlt" value="#4db8ff"></div>
+      <div class="col"><label>Predict</label><input type="color" id="colPred" value="#ffa500"></div>
+    </div>
+    <div class="slider-header" style="margin-top:12px;"><label>Arrow Size</label><span id="sizeVal" class="slider-val">8px</span></div>
+    <input type="range" id="arrowSize" min="4" max="16" value="8">
+    <div class="toggle-row"><span style="font-size:13px; color:#ddd;">Show Prediction</span><label class="switch"><input type="checkbox" id="showResponse"><span class="slider"></span></label></div>
+    <div class="toggle-row"><span style="font-size:13px; color:#ff6666;">Show Threats</span><label class="switch"><input type="checkbox" id="showThreats"><span class="slider"></span></label></div>
+    <div class="toggle-row"><span style="font-size:11px; color:#aaa;">↳ Aggressive Only</span><label class="switch"><input type="checkbox" id="onlyAggressiveThreats"><span class="slider"></span></label></div>
+  </div>
+  <div class="control-group">
+    <div class="slider-header"><label>Depth</label><span id="depthVal" class="slider-val">15</span></div>
+    <input type="range" id="depthRange" min="10" max="25" value="15">
+    <div class="slider-header" style="margin-top:10px;"><label>Multi-PV Lines</label><span id="linesVal" class="slider-val">1</span></div>
+    <input type="range" id="linesCount" min="1" max="3" value="1">
+    <div class="slider-header" style="margin-top:10px;"><label>Threat Depth</label><span id="tacticsVal" class="slider-val">3</span></div>
+    <input type="range" id="tacticsDepth" min="1" max="5" value="3">
+  </div>
+  <div class="btn-group"><button id="startBtn" class="btn-start">Start</button><button id="stopBtn" class="btn-stop">Stop</button></div>
+  <script src="popup.js"></script>
+</body>
+</html>
