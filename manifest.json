@@ -1,12 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Chess.com Board Detector",
-  "version": "0.5.1",
+  "version": "0.8.7",
   "permissions": ["storage"],
-  "host_permissions": ["https://www.chess.com/*", "https://lichess.org/*"],
+  "host_permissions": [
+    "https://www.chess.com/*",
+    "https://lichess.org/*"
+  ],
   "web_accessible_resources": [
     {
-      "resources": ["lichess-svgrepo-com.svg"],
+      "resources": ["lichess-svgrepo-com.svg", "vendor/stockfish/stockfish.js", "vendor/stockfish/stockfish.wasm"],
       "matches": ["https://www.chess.com/*"]
     }
   ],

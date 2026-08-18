@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pin Overlay Prototype</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        color: #e8e8e8;
+        background: #262421;
+        font: 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .workspace {
+        width: min(1120px, 100%);
+        display: grid;
+        grid-template-columns: minmax(320px, 720px) 300px;
+        gap: 28px;
+        align-items: start;
+      }
+
+      .board-wrap {
+        width: min(720px, 100%);
+      }
+
+      .players {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        color: #c9c6c0;
+        font-weight: 650;
+      }
+
+      .board {
+        width: 100%;
+        aspect-ratio: 1;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        border-radius: 3px;
+        overflow: hidden;
+        box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
+      }
+
+      .square {
+        position: relative;
+        display: grid;
+        place-items: center;
+      }
+
+      .light {
+        background: #eeeed2;
+      }
+
+      .dark {
+        background: #769656;
+      }
+
+      .piece {
+        position: relative;
+        width: 82%;
+        aspect-ratio: 1;
+        display: grid;
+        place-items: center;
+        color: #f7f7f7;
+        font-size: clamp(32px, 7vw, 68px);
+        text-shadow: 0 2px 0 #555, 0 4px 8px rgba(0, 0, 0, 0.45);
+        line-height: 1;
+      }
+
+      .piece.black {
+        color: #3d3d3d;
+        text-shadow: 0 1px 0 #999, 0 4px 8px rgba(0, 0, 0, 0.35);
+      }
+
+      .pin-badge {
+        position: absolute;
+        top: 3%;
+        right: 1%;
+        width: 28%;
+        min-width: 18px;
+        aspect-ratio: 1;
+        display: grid;
+        place-items: center;
+        border: 2px solid #f5f5f5;
+        border-radius: 50%;
+        color: #fff;
+        background: #d6462f;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+        font-size: 0.26em;
+        font-weight: 900;
+        line-height: 1;
+      }
+
+      .pin-badge.soft {
+        background: #2f7ed6;
+      }
+
+      .panel {
+        display: grid;
+        gap: 12px;
+      }
+
+      .settings {
+        padding: 14px;
+        border: 1px solid #d9dde3;
+        border-radius: 8px;
+        color: #202124;
+        background: #f7f8fa;
+      }
+
+      .settings h1 {
+        margin: 0 0 10px;
+        font-size: 16px;
+      }
+
+      .switch-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 10px;
+        border: 1px solid #d9dde3;
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      strong,
+      small {
+        display: block;
+      }
+
+      small {
+        margin-top: 2px;
+        color: #68707a;
+      }
+
+      input {
+        width: 18px;
+        height: 18px;
+      }
+
+      .legend {
+        padding: 12px 14px;
+        border-radius: 8px;
+        background: #1f1e1b;
+        color: #d7d4ce;
+      }
+
+      .legend p {
+        margin: 0;
+      }
+
+      @media (max-width: 840px) {
+        body {
+          place-items: start center;
+        }
+
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="workspace">
+      <section class="board-wrap" aria-label="Pinned piece badge prototype">
+        <div class="players">
+          <span>Opponent</span>
+          <span>5:47</span>
+        </div>
+        <div class="board">
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"><div class="piece black">♜</div></div>
+          <div class="square dark"></div>
+          <div class="square light"><div class="piece black">♚</div></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"><div class="piece black">♞</div></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"><div class="piece white">♙<span class="pin-badge">!</span></div></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+
+          <div class="square light"><div class="piece black">♛</div></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"><div class="piece white">♔</div></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"><div class="piece white">♗<span class="pin-badge soft">!</span></div></div>
+
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"><div class="piece white">♖<span class="pin-badge">!</span></div></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"><div class="piece black">♝</div></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <section class="settings">
+          <h1>Board Detector</h1>
+          <label class="switch-row">
+            <span>
+              <strong>Pin badges</strong>
+              <small>Show corner marks on strictly pinned pieces</small>
+            </span>
+            <input type="checkbox" checked>
+          </label>
+        </section>
+
+        <section class="legend">
+          <p>Prototype: small corner badges sit on the piece itself, similar in scale to Chess.com result symbols. Red marks king pins; blue marks pins to a higher-value non-king target.</p>
+        </section>
+      </aside>
+    </main>
+  </body>
+</html>

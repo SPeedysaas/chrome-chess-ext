@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fork Overlay Prototype</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        color: #e9e6dc;
+        background: #272522;
+        font: 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .workspace {
+        width: min(1120px, 100%);
+        display: grid;
+        grid-template-columns: minmax(320px, 720px) 320px;
+        gap: 28px;
+        align-items: start;
+      }
+
+      .board-wrap {
+        width: min(720px, 100%);
+      }
+
+      .players {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        color: #c9c6c0;
+        font-weight: 650;
+      }
+
+      .board {
+        width: 100%;
+        aspect-ratio: 1;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        border-radius: 3px;
+        overflow: hidden;
+        box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
+      }
+
+      .square {
+        position: relative;
+        display: grid;
+        place-items: center;
+      }
+
+      .light {
+        background: #eeeed2;
+      }
+
+      .dark {
+        background: #769656;
+      }
+
+      .piece {
+        position: relative;
+        width: 82%;
+        aspect-ratio: 1;
+        display: grid;
+        place-items: center;
+        color: #f8f8f8;
+        font-size: clamp(32px, 7vw, 68px);
+        line-height: 1;
+        text-shadow: 0 2px 0 #555, 0 4px 8px rgba(0, 0, 0, 0.45);
+      }
+
+      .piece.black {
+        color: #3e3e3e;
+        text-shadow: 0 1px 0 #999, 0 4px 8px rgba(0, 0, 0, 0.35);
+      }
+
+      .fork-square {
+        position: absolute;
+        inset: 4%;
+        display: grid;
+        place-items: center;
+        border: 4px solid #f2c84b;
+        border-radius: 10%;
+        color: #111;
+        background: rgba(242, 200, 75, 0.24);
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55), 0 2px 7px rgba(0, 0, 0, 0.35);
+        font-size: clamp(16px, 3vw, 24px);
+        font-weight: 900;
+        letter-spacing: 0;
+        line-height: 1;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.75);
+      }
+
+      .fork-square.defended {
+        border-color: #46b783;
+        background: rgba(70, 183, 131, 0.28);
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+      }
+
+      .fork-square.check {
+        border-color: #d6462f;
+        background: rgba(214, 70, 47, 0.28);
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+      }
+
+      .fork-square.between {
+        border-color: #6f55d9;
+        background: rgba(111, 85, 217, 0.3);
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+      }
+
+      .target-ring {
+        position: absolute;
+        inset: 9%;
+        border: 4px solid #f2c84b;
+        border-radius: 50%;
+        pointer-events: none;
+        filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+      }
+
+      .target-ring.defended {
+        border-color: #46b783;
+      }
+
+      .target-ring.check {
+        border-color: #d6462f;
+      }
+
+      .target-ring.between {
+        border-color: #6f55d9;
+      }
+
+      .target-ring::after {
+        position: absolute;
+        right: -8px;
+        bottom: -8px;
+        min-width: 22px;
+        height: 22px;
+        display: grid;
+        place-items: center;
+        border: 2px solid #f5f5f5;
+        border-radius: 999px;
+        color: #111;
+        background: inherit;
+        background-color: #f2c84b;
+        content: attr(data-mark);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .target-ring.defended::after {
+        color: #fff;
+        background-color: #46b783;
+      }
+
+      .target-ring.check::after {
+        color: #fff;
+        background-color: #d6462f;
+      }
+
+      .target-ring.between::after {
+        color: #fff;
+        background-color: #6f55d9;
+      }
+
+      .panel {
+        display: grid;
+        gap: 12px;
+      }
+
+      .settings,
+      .legend,
+      .notes {
+        border-radius: 8px;
+      }
+
+      .settings {
+        padding: 14px;
+        border: 1px solid #d9dde3;
+        color: #202124;
+        background: #f7f8fa;
+      }
+
+      .settings h1 {
+        margin: 0 0 10px;
+        font-size: 16px;
+      }
+
+      .switch-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 10px;
+        border: 1px solid #d9dde3;
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      strong,
+      small {
+        display: block;
+      }
+
+      small {
+        margin-top: 2px;
+        color: #68707a;
+      }
+
+      input {
+        width: 18px;
+        height: 18px;
+      }
+
+      .legend,
+      .notes {
+        padding: 12px 14px;
+        background: #1f1e1b;
+        color: #d7d4ce;
+      }
+
+      .legend {
+        display: grid;
+        gap: 10px;
+      }
+
+      .legend-row {
+        display: grid;
+        grid-template-columns: 24px 1fr;
+        gap: 10px;
+        align-items: start;
+      }
+
+      .dot {
+        width: 18px;
+        height: 18px;
+        margin-top: 1px;
+        border: 2px solid #f5f5f5;
+        border-radius: 999px;
+        background: #f2c84b;
+      }
+
+      .dot.defended {
+        background: #46b783;
+      }
+
+      .dot.check {
+        background: #d6462f;
+      }
+
+      .dot.between {
+        background: #6f55d9;
+      }
+
+      .legend-row p,
+      .notes p {
+        margin: 0;
+      }
+
+      @media (max-width: 860px) {
+        body {
+          place-items: start center;
+        }
+
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="workspace">
+      <section class="board-wrap" aria-label="Fork highlight prototype">
+        <div class="players">
+          <span>Opponent</span>
+          <span>5:47</span>
+        </div>
+        <div class="board">
+          <div class="square light"><div class="piece black">&#9820;<span class="target-ring between" data-mark="F"></span></div></div>
+          <div class="square dark"></div>
+          <div class="square light"><span class="fork-square between">F</span></div>
+          <div class="square dark"></div>
+          <div class="square light"><div class="piece black">&#9818;<span class="target-ring check" data-mark="+"></span></div></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"><div class="piece black">&#9820;<span class="target-ring defended" data-mark="D"></span></div></div>
+
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+
+          <div class="square light"></div>
+          <div class="square dark"><div class="piece black">&#9821;<span class="target-ring between" data-mark="F"></span></div></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"><span class="fork-square defended">D</span></div>
+          <div class="square dark"></div>
+
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"><span class="fork-square check">+</span></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"><div class="piece black">&#9819;<span class="target-ring check" data-mark="+"></span></div></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"><div class="piece black">&#9821;<span class="target-ring defended" data-mark="D"></span></div></div>
+
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"><span class="fork-square between">F</span></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"></div>
+          <div class="square dark"><div class="piece white">&#9814;<span class="target-ring between" data-mark="F"></span></div></div>
+          <div class="square light"></div>
+          <div class="square dark"></div>
+          <div class="square light"><div class="piece white">&#9812;</div></div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <section class="settings">
+          <h1>Board Detector</h1>
+          <label class="switch-row">
+            <span>
+              <strong>Fork highlights</strong>
+              <small>Show possible forks in the current position</small>
+            </span>
+            <input type="checkbox" checked>
+          </label>
+        </section>
+
+        <section class="legend" aria-label="Fork highlight legend">
+          <div class="legend-row">
+            <span class="dot defended"></span>
+            <p><strong>Defended fork</strong><small>The forking piece is protected by another friendly piece.</small></p>
+          </div>
+          <div class="legend-row">
+            <span class="dot check"></span>
+            <p><strong>Checking fork</strong><small>The fork also gives check to the opposing king.</small></p>
+          </div>
+          <div class="legend-row">
+            <span class="dot between"></span>
+            <p><strong>Between pieces</strong><small>The forking piece sits between two valuable targets.</small></p>
+          </div>
+          <div class="legend-row">
+            <span class="dot"></span>
+            <p><strong>Basic fork</strong><small>Available as a neutral fallback when no special state applies.</small></p>
+          </div>
+        </section>
+
+        <section class="notes">
+          <p>Prototype: highlighted squares show where a piece would move to create the fork; rings mark the forked targets. The symbols stay short so they remain readable at extension scale.</p>
+        </section>
+      </aside>
+    </main>
+  </body>
+</html>
