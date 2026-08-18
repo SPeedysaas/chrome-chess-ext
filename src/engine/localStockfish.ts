@@ -1,3 +1,4 @@
+import { Chess } from 'chess.js';
 import { parseInfoLine, type EngineLine } from './stockfishUci';
 
 interface WorkerLike {
@@ -15,6 +16,10 @@ export interface LocalStockfishEngineOptions {
 
 export interface ContinuousAnalysisSession {
   stop: () => void;
+}
+
+export interface StockfishSearchOptions {
+  noCaptures?: boolean;
 }
 
 type PendingAnalysis =
@@ -55,7 +60,12 @@ export class LocalStockfishEngine {
     this.worker.onmessage = (event) => this.handleMessage(String(event.data));
   }
 
-  analyze(fen: string, depth = this.depth): Promise<EngineLine[]> {
+  analyze(fen: string, depth = this.depth, searchOptions: StockfishSearchOptions = {}): Promise<EngineLine[]> {
+    const searchMoves = allowedSearchMoves(fen, searchOptions);
+    if (searchMoves?.length === 0) {
+      return Promise.resolve([]);
+    }
+
     this.initialize();
 
     let request!: PendingAnalysis;
@@ -71,12 +81,22 @@ export class LocalStockfishEngine {
 
     this.startSearchWhenReady(request, () => {
       this.worker.postMessage(`position fen ${fen}`);
-      this.worker.postMessage(`go depth ${depth}`);
+      this.worker.postMessage(goCommand(depth, searchMoves));
     });
     return promise;
   }
 
-  analyzeContinuously(fen: string, onUpdate: (lines: EngineLine[]) => void): ContinuousAnalysisSession {
+  analyzeContinuously(
+    fen: string,
+    onUpdate: (lines: EngineLine[]) => void,
+    searchOptions: StockfishSearchOptions = {}
+  ): ContinuousAnalysisSession {
+    const searchMoves = allowedSearchMoves(fen, searchOptions);
+    if (searchMoves?.length === 0) {
+      onUpdate([]);
+      return { stop: () => undefined };
+    }
+
     this.initialize();
 
     const pending: PendingAnalysis = {
@@ -88,7 +108,7 @@ export class LocalStockfishEngine {
 
     this.startSearchWhenReady(pending, () => {
       this.worker.postMessage(`position fen ${fen}`);
-      this.worker.postMessage(`go depth ${this.depth}`);
+      this.worker.postMessage(goCommand(this.depth, searchMoves));
     });
 
     return {
@@ -219,6 +239,23 @@ export class LocalStockfishEngine {
     request.settled = true;
     request.resolve(lines);
   }
+}
+
+function allowedSearchMoves(fen: string, options: StockfishSearchOptions): string[] | undefined {
+  if (!options.noCaptures) {
+    return undefined;
+  }
+
+  const chess = new Chess(fen);
+  return chess.moves({ verbose: true })
+    .filter((move) => !move.isCapture())
+    .map((move) => `${move.from}${move.to}${move.promotion ?? ''}`);
+}
+
+function goCommand(depth: number, searchMoves?: string[]): string {
+  return searchMoves
+    ? `go depth ${depth} searchmoves ${searchMoves.join(' ')}`
+    : `go depth ${depth}`;
 }
 
 function sortedLines(lines: Map<number, EngineLine>): EngineLine[] {

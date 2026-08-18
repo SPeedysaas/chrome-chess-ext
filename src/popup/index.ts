@@ -11,6 +11,7 @@ const evalTopMovesInput = document.querySelector<HTMLInputElement>('#evalTopMove
 const showTopMovesInput = document.querySelector<HTMLInputElement>('#showTopMoves');
 const showMovesButtonInput = document.querySelector<HTMLInputElement>('#showMovesButton');
 const showOpponentMovesOnlyInput = document.querySelector<HTMLInputElement>('#showOpponentMovesOnly');
+const botAutoPlayInput = document.querySelector<HTMLInputElement>('#botAutoPlay');
 const noCaptureBotModeInput = document.querySelector<HTMLInputElement>('#noCaptureBotMode');
 const botSearchDepthInput = document.querySelector<HTMLInputElement>('#botSearchDepth');
 const botCandidateMovesInput = document.querySelector<HTMLInputElement>('#botCandidateMoves');
@@ -100,6 +101,10 @@ function applySettings(settings: ExtensionSettings): void {
     showOpponentMovesOnlyInput.checked = settings.showOpponentMovesOnly;
   }
 
+  if (botAutoPlayInput) {
+    botAutoPlayInput.checked = settings.botAutoPlay;
+  }
+
   if (noCaptureBotModeInput) {
     noCaptureBotModeInput.checked = settings.noCaptureBotMode;
   }
@@ -168,6 +173,10 @@ function readFormSettings(): ExtensionSettings {
 
   if (showOpponentMovesOnlyInput) {
     settings.showOpponentMovesOnly = showOpponentMovesOnlyInput.checked;
+  }
+
+  if (botAutoPlayInput) {
+    settings.botAutoPlay = botAutoPlayInput.checked;
   }
 
   if (noCaptureBotModeInput) {

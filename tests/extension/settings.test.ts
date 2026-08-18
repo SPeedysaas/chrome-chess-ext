@@ -24,6 +24,10 @@ describe('extension settings', () => {
       showTopMoves: true,
       showMovesButton: true,
       showOpponentMovesOnly: false,
+      botAutoPlay: false,
+      noCaptureBotMode: false,
+      botSearchDepth: 12,
+      botCandidateMoves: 3,
       topMovesScale: 100,
       liveMoveAlert: true,
       debounceMs: 0,
@@ -83,6 +87,23 @@ describe('extension settings', () => {
   it('keeps opponent-only live move visibility disabled by default and preserves customization', () => {
     expect(normalizeExtensionSettings().showOpponentMovesOnly).toBe(false);
     expect(normalizeExtensionSettings({ showOpponentMovesOnly: true }).showOpponentMovesOnly).toBe(true);
+  });
+
+  it('keeps no-capture bot mode opt-in and preserves customization', () => {
+    expect(normalizeExtensionSettings().noCaptureBotMode).toBe(false);
+    expect(normalizeExtensionSettings({ noCaptureBotMode: true }).noCaptureBotMode).toBe(true);
+  });
+
+  it('keeps Stockfish auto-play opt-in and preserves customization', () => {
+    expect(normalizeExtensionSettings().botAutoPlay).toBe(false);
+    expect(normalizeExtensionSettings({ botAutoPlay: true }).botAutoPlay).toBe(true);
+  });
+
+  it('clamps bot search settings', () => {
+    expect(normalizeExtensionSettings({ botSearchDepth: 1 }).botSearchDepth).toBe(4);
+    expect(normalizeExtensionSettings({ botSearchDepth: 99 }).botSearchDepth).toBe(24);
+    expect(normalizeExtensionSettings({ botCandidateMoves: 0 }).botCandidateMoves).toBe(1);
+    expect(normalizeExtensionSettings({ botCandidateMoves: 99 }).botCandidateMoves).toBe(10);
   });
 
   it('defaults alternative move popup size to 100 and clamps customization from 50 to 300', () => {

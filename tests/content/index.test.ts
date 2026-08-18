@@ -342,6 +342,7 @@ describe('startChessComBoardDetector', () => {
     let capturedShowMovesButton: boolean | undefined;
     let capturedShowOpponentMovesOnly: boolean | undefined;
     let capturedTopMovesScale: number | undefined;
+    let capturedNoCaptureBotMode: boolean | undefined;
 
     startChessComBoardDetector({
       cache: new GameCache(),
@@ -357,6 +358,7 @@ describe('startChessComBoardDetector', () => {
         showTopMoves: false,
         showMovesButton: false,
         showOpponentMovesOnly: true,
+        noCaptureBotMode: true,
         topMovesScale: 125,
         liveMoveAlert: false,
         debounceMs: 150,
@@ -368,6 +370,7 @@ describe('startChessComBoardDetector', () => {
         capturedShowMovesButton = options.showMovesButton;
         capturedShowOpponentMovesOnly = options.showOpponentMovesOnly;
         capturedTopMovesScale = options.topMovesScale;
+        capturedNoCaptureBotMode = options.noCaptureBotMode;
         return evalBar;
       }
     });
@@ -377,6 +380,7 @@ describe('startChessComBoardDetector', () => {
     expect(capturedShowMovesButton).toBe(false);
     expect(capturedShowOpponentMovesOnly).toBe(true);
     expect(capturedTopMovesScale).toBe(125);
+    expect(capturedNoCaptureBotMode).toBe(true);
   });
 
   it('shows the eval bar analysis state in the debug Stockfish tab', () => {
