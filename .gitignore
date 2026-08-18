@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.superpowers/
+coverage/
+*.log
+.DS_Store
+Thumbs.db

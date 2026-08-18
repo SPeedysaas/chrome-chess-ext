@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chess.com Board Detector Explained</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #172033;
+        --muted: #5d6678;
+        --line: #d9dee8;
+        --panel: #ffffff;
+        --page: #f5f7fb;
+        --accent: #1f7a5a;
+        --accent-soft: #dff3eb;
+        --warn: #a15c00;
+        --warn-soft: #fff0d8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        line-height: 1.5;
+        color: var(--ink);
+        background: var(--page);
+      }
+
+      main {
+        width: min(1040px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 48px;
+      }
+
+      header {
+        padding: 28px 0 22px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(2rem, 4vw, 3.4rem);
+        line-height: 1.05;
+      }
+
+      h2 {
+        margin: 0 0 12px;
+        font-size: 1.25rem;
+      }
+
+      h3 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      .lead {
+        max-width: 760px;
+        color: var(--muted);
+        font-size: 1.08rem;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 22px;
+      }
+
+      section {
+        margin-top: 28px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 18px;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        min-height: 28px;
+        padding: 4px 10px;
+        margin-bottom: 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 0.8rem;
+        letter-spacing: 0;
+      }
+
+      .warn {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      li + li {
+        margin-top: 8px;
+      }
+
+      .flow {
+        counter-reset: step;
+        display: grid;
+        gap: 10px;
+      }
+
+      .step {
+        position: relative;
+        padding-left: 42px;
+      }
+
+      .step::before {
+        counter-increment: step;
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 0;
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--ink);
+        color: white;
+        font-weight: 700;
+        font-size: 0.85rem;
+      }
+
+      code {
+        padding: 2px 5px;
+        border-radius: 4px;
+        background: #eef1f6;
+        font-family: Consolas, Monaco, monospace;
+        font-size: 0.92em;
+      }
+
+      .module-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .module-list .card {
+        min-height: 136px;
+      }
+
+      footer {
+        margin-top: 28px;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      @media (max-width: 760px) {
+        main {
+          width: min(100% - 24px, 1040px);
+          padding-top: 18px;
+        }
+
+        .grid,
+        .module-list {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="tag">Chrome Extension</span>
+        <h1>Chess.com Board Detector</h1>
+        <p class="lead">
+          This project is a Manifest V3 browser extension that runs on Chess.com pages, reads the visible chess board, classifies the page as live, replay, analysis, or unknown, and publishes a structured detection result inside the page.
+        </p>
+      </header>
+
+      <section class="grid" aria-label="Summary">
+        <article class="card">
+          <h2>What It Watches</h2>
+          <p>
+            It loads only on <code>https://www.chess.com/*</code>. A content script starts after the page is idle and watches board, clock, move-list, and control changes.
+          </p>
+        </article>
+
+        <article class="card">
+          <h2>What It Extracts</h2>
+          <p>
+            It can produce a board map, FEN placement, orientation, mode confidence, evidence, source, game id, and optional PGN/FEN from Chess.com replay or analysis share data.
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="tag warn">Important Gate</span>
+          <h2>Live Games Are Blocked</h2>
+          <p>
+            Sharing is disabled for live and unknown games. Replay and analysis pages are allowed only when mode detection is confident enough.
+          </p>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>Plain-English Explanation</h2>
+        <p>
+          The extension is not a chess engine and it does not make moves. Its job is to observe the current Chess.com page and convert visible page state into structured data. It detects whether the page looks like an active live game, a completed-game replay, or an analysis board. Then it tries to read the board position from the DOM, reconstruct a FEN placement, and report how confident it is.
+        </p>
+      </section>
+
+      <section>
+        <h2>How It Works</h2>
+        <div class="flow">
+          <article class="card step">
+            <h3>Load settings</h3>
+            <p>The popup stores settings in <code>chrome.storage.sync</code>: enabled, debug mode, debounce delay, and fallback scan interval.</p>
+          </article>
+
+          <article class="card step">
+            <h3>Watch page changes</h3>
+            <p><code>PageWatcher</code> reacts to Chess.com DOM changes and waits briefly before running detection, so one move animation does not trigger many full scans.</p>
+          </article>
+
+          <article class="card step">
+            <h3>Classify the page mode</h3>
+            <p><code>ModeDetector</code> looks for signals such as resign/draw buttons, clocks, replay controls, analysis layout, and game-over controls.</p>
+          </article>
+
+          <article class="card step">
+            <h3>Apply sharing rules</h3>
+            <p><code>ShareController</code> blocks live games, unknown pages, and low-confidence mode results before replay or analysis data can be treated as shareable.</p>
+          </article>
+
+          <article class="card step">
+            <h3>Read or reconstruct the position</h3>
+            <p><code>BoardReader</code> reads piece elements and square classes. For replay or analysis pages, the pipeline can also use Chess.com share data or reconcile the move list with <code>chess.js</code>.</p>
+          </article>
+
+          <article class="card step">
+            <h3>Publish a result</h3>
+            <p>The content script dispatches a <code>chesscom-board-detector:result</code> browser event. In debug mode, it also logs and renders a preview.</p>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <h2>Main Files</h2>
+        <div class="module-list">
+          <article class="card">
+            <h3><code>manifest.json</code></h3>
+            <p>Defines the extension name, Chess.com host permission, popup page, storage permission, and content script entry point.</p>
+          </article>
+
+          <article class="card">
+            <h3><code>src/content/index.ts</code></h3>
+            <p>Starts and restarts the detector from stored settings, dispatches detection results, and handles debug preview behavior.</p>
+          </article>
+
+          <article class="card">
+            <h3><code>src/detector/pipeline.ts</code></h3>
+            <p>Coordinates the full detection cycle: mode detection, sharing decision, fingerprint cache, board read, share extraction, and move-list fallback.</p>
+          </article>
+
+          <article class="card">
+            <h3><code>src/detector/boardReader.ts</code></h3>
+            <p>Converts Chess.com DOM piece classes and board orientation into chess squares, board maps, and FEN placement strings.</p>
+          </article>
+
+          <article class="card">
+            <h3><code>src/detector/shareController.ts</code></h3>
+            <p>Centralizes the safety rule: live and unknown game states are not shareable, while confident replay and analysis states are allowed.</p>
+          </article>
+
+          <article class="card">
+            <h3><code>popup/index.html</code></h3>
+            <p>Provides a small settings UI for enabling the detector, turning on debug output, and tuning scan timing.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Typical Result</h2>
+        <p>
+          A successful detection result can say: status is <code>ok</code>, game id is known, mode is <code>live</code>, board confidence is high, orientation is white or black, source is <code>board-dom</code>, and sharing is blocked because the reason is <code>live-game</code>.
+        </p>
+      </section>
+
+      <footer>
+        Based on the current files in this repository: manifest, popup, content script, detector pipeline, detector modules, settings, and tests.
+      </footer>
+    </main>
+  </body>
+</html>

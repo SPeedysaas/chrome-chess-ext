@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chess.com Board Detector</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="panel">
+      <header>
+        <div class="logo" aria-hidden="true">♞</div>
+        <div class="header-text">
+          <h1>Board Detector</h1>
+          <p id="status" role="status">Loading settings...</p>
+        </div>
+      </header>
+
+      <nav class="section-nav" aria-label="Settings sections">
+        <a href="#settings-extension">Extension</a>
+        <a href="#settings-overlays">Overlays</a>
+        <a href="#settings-evaluation">Evaluation</a>
+        <a href="#settings-live">Live &amp; advanced</a>
+      </nav>
+
+      <form id="settings-form">
+        <section class="settings-section" id="settings-extension" aria-labelledby="section-extension">
+          <h2 id="section-extension">Extension</h2>
+          <label class="switch-row">
+          <span>
+            <strong>Enabled</strong>
+            <small>Run detection on Chess.com pages</small>
+          </span>
+          <input id="enabled" name="enabled" type="checkbox">
+          </label>
+
+          <label class="switch-row">
+          <span>
+            <strong>Debug</strong>
+            <small>Log detector results in page DevTools</small>
+          </span>
+          <input id="debug" name="debug" type="checkbox">
+          </label>
+        </section>
+
+        <section class="settings-section" id="settings-overlays" aria-labelledby="section-overlays">
+          <h2 id="section-overlays">Board overlays</h2>
+          <label class="switch-row">
+          <span>
+            <strong>Pin badges</strong>
+            <small>Show corner marks on strictly pinned pieces</small>
+          </span>
+          <input id="pinOverlay" name="pinOverlay" type="checkbox">
+          </label>
+
+        <label class="switch-row">
+          <span>
+            <strong>Winning fork highlights</strong>
+            <small>Show destination squares for forks that win material</small>
+          </span>
+          <input id="forkOverlay" name="forkOverlay" type="checkbox">
+          </label>
+
+        <label class="switch-row">
+          <span>
+            <strong>Attack balance badges</strong>
+            <small>Show each piece's difference between attackers and defenders</small>
+          </span>
+          <input id="attackBalanceOverlay" name="attackBalanceOverlay" type="checkbox">
+          </label>
+        </section>
+
+        <section class="settings-section" id="settings-evaluation" aria-labelledby="section-evaluation">
+          <h2 id="section-evaluation">Evaluation</h2>
+          <label class="switch-row">
+          <span>
+            <strong>Eval bar</strong>
+            <small>Show a Chess.com-style engine evaluation beside the board</small>
+          </span>
+          <input id="evalBar" name="evalBar" type="checkbox">
+          </label>
+
+        <label class="field-row">
+          <span>
+            <strong>Top moves</strong>
+            <small>How many Stockfish candidate moves to show beside the board</small>
+          </span>
+          <input id="evalTopMoves" name="evalTopMoves" type="number" min="1" max="10" step="1">
+          </label>
+
+        <label class="switch-row">
+          <span>
+            <strong>Show move names</strong>
+            <small>Hide this to keep only the rank and evaluation in the alternative popup</small>
+          </span>
+          <input id="showTopMoves" name="showTopMoves" type="checkbox">
+          </label>
+
+        <label class="switch-row">
+          <span>
+            <strong>Show moves button</strong>
+            <small>When move names are hidden, show a movable button that reveals board arrows</small>
+          </span>
+          <input id="showMovesButton" name="showMovesButton" type="checkbox">
+          </label>
+
+        <label class="switch-row">
+          <span>
+            <strong>Show opponent moves only</strong>
+            <small>On live games, show candidate arrows only when the opponent is on move</small>
+          </span>
+          <input id="showOpponentMovesOnly" name="showOpponentMovesOnly" type="checkbox">
+          </label>
+        </section>
+
+        <section class="settings-section" id="settings-live" aria-labelledby="section-live">
+          <h2 id="section-live">Live games and advanced</h2>
+          <label class="switch-row">
+            <span>
+              <strong>Live move alert</strong>
+              <small>Warn when local Stockfish sees only a few safe moves</small>
+            </span>
+            <input id="liveMoveAlert" name="liveMoveAlert" type="checkbox">
+          </label>
+
+          <label class="field-row">
+          <span>
+            <strong>Alternative popup size</strong>
+            <small>Scale the alternative evaluation popup from 50% to 300%</small>
+          </span>
+          <input id="topMovesScale" name="topMovesScale" type="number" min="50" max="300" step="5">
+          </label>
+
+        <label class="field-row">
+          <span>
+            <strong>Debounce ms</strong>
+            <small>Standard delay before reading page changes</small>
+          </span>
+          <input id="debounceMs" name="debounceMs" type="number" min="0" max="1000" step="1">
+          </label>
+
+        <label class="field-row">
+          <span>
+            <strong>Fallback ms</strong>
+            <small>Backup scan interval when page changes are missed</small>
+          </span>
+          <input id="fallbackMs" name="fallbackMs" type="number" min="1000" max="60000" step="500">
+          </label>
+        </section>
+
+        <div class="actions">
+          <button type="button" id="reset">Reset</button>
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </main>
+
+    <script type="module" src="../dist/popup/index.js"></script>
+  </body>
+</html>

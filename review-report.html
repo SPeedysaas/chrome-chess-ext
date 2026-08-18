@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chess.com Board Detector - Project Review</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17191c;
+      --muted: #5f666e;
+      --paper: #f4f5f2;
+      --surface: #ffffff;
+      --line: #d7dad6;
+      --critical: #a12828;
+      --critical-bg: #fff0ee;
+      --medium: #9a5b10;
+      --medium-bg: #fff7e7;
+      --low: #28634d;
+      --low-bg: #edf8f2;
+      --accent: #315f91;
+      --accent-bg: #eef5fb;
+      --code: #202428;
+      --shadow: 0 10px 30px rgba(30, 35, 38, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+    a { color: var(--accent); }
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+      background: #eceeeb;
+      padding: 0.12rem 0.32rem;
+      border-radius: 3px;
+    }
+    .hero {
+      color: #f8faf9;
+      background: #202b2e;
+      border-bottom: 5px solid #c6a15b;
+    }
+    .hero-inner, main, .footer-inner {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+    .hero-inner { padding: 54px 0 46px; }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: #c7d7d0;
+      font-size: 0.78rem;
+      font-weight: 750;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      max-width: 800px;
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+    .lede {
+      max-width: 760px;
+      margin: 18px 0 0;
+      color: #d8e0dc;
+      font-size: 1.05rem;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 22px;
+      margin-top: 28px;
+      color: #bfc9c4;
+      font-size: 0.9rem;
+    }
+    main { padding: 34px 0 64px; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 34px;
+    }
+    .metric {
+      min-height: 116px;
+      padding: 18px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+    }
+    .metric strong { display: block; font-size: 1.85rem; line-height: 1.1; }
+    .metric span { display: block; margin-top: 8px; color: var(--muted); font-size: 0.87rem; }
+    section { margin-top: 42px; }
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    h2 { margin: 0; font-size: 1.45rem; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+    .filters {
+      display: inline-flex;
+      gap: 4px;
+      margin: 18px 0;
+      padding: 4px;
+      background: #e5e8e4;
+      border-radius: 6px;
+    }
+    .filters button {
+      min-height: 34px;
+      border: 0;
+      border-radius: 4px;
+      padding: 0 13px;
+      color: #4f565c;
+      background: transparent;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .filters button[aria-pressed="true"] { color: var(--ink); background: var(--surface); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+    .finding-list { display: grid; gap: 14px; }
+    .finding {
+      display: grid;
+      grid-template-columns: 118px minmax(0, 1fr);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-left-width: 5px;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .finding[data-severity="high"] { border-left-color: var(--critical); }
+    .finding[data-severity="medium"] { border-left-color: var(--medium); }
+    .finding[data-severity="low"] { border-left-color: var(--low); }
+    .finding.hidden { display: none; }
+    .severity {
+      padding: 21px 14px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    [data-severity="high"] .severity { color: var(--critical); background: var(--critical-bg); }
+    [data-severity="medium"] .severity { color: var(--medium); background: var(--medium-bg); }
+    [data-severity="low"] .severity { color: var(--low); background: var(--low-bg); }
+    .finding-body { padding: 20px 22px 22px; min-width: 0; }
+    .finding h3 { margin: 0; font-size: 1.08rem; }
+    .finding p { margin: 10px 0 0; color: #363b40; }
+    .evidence {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: #f5f6f4;
+      border: 1px solid #e0e2df;
+      border-radius: 4px;
+      color: #42484d;
+      font-size: 0.88rem;
+      overflow-wrap: anywhere;
+    }
+    .impact { font-weight: 720; color: var(--ink); }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 22px;
+    }
+    .panel h3 { margin: 0 0 14px; font-size: 1rem; }
+    .panel ul, .panel ol { margin: 0; padding-left: 21px; }
+    .panel li + li { margin-top: 9px; }
+    .status-row {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 14px;
+      padding: 12px 0;
+      border-top: 1px solid var(--line);
+    }
+    .status-row:first-of-type { border-top: 0; padding-top: 0; }
+    .status-label { color: var(--muted); font-weight: 700; }
+    .pass { color: var(--low); font-weight: 750; }
+    .fail { color: var(--critical); font-weight: 750; }
+    .architecture {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .arch-item { padding: 18px; border-top: 4px solid var(--accent); background: var(--surface); }
+    .arch-item:nth-child(2) { border-top-color: #4e7a55; }
+    .arch-item:nth-child(3) { border-top-color: #a06a2f; }
+    .arch-item strong { display: block; }
+    .arch-item p { margin: 7px 0 0; color: var(--muted); font-size: 0.9rem; }
+    footer { background: #e6e9e5; border-top: 1px solid #cfd3ce; }
+    .footer-inner { padding: 20px 0; color: var(--muted); font-size: 0.86rem; }
+    @media (max-width: 800px) {
+      .summary-grid, .architecture { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .two-col { grid-template-columns: 1fr; }
+      .finding { grid-template-columns: 1fr; }
+      .severity { padding: 8px 18px; }
+    }
+    @media (max-width: 520px) {
+      .hero-inner, main, .footer-inner { width: min(100% - 24px, 1120px); }
+      .hero-inner { padding: 38px 0 34px; }
+      .summary-grid, .architecture { grid-template-columns: 1fr; }
+      .section-head { align-items: start; flex-direction: column; gap: 5px; }
+      .filters { width: 100%; }
+      .filters button { flex: 1; padding: 0 7px; }
+      .status-row { grid-template-columns: 1fr; gap: 3px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Engineering review / 16 July 2026</p>
+      <h1>Chess.com Board Detector</h1>
+      <p class="lede">A focused review of the browser extension's detector pipeline, local Stockfish integration, content overlays, popup settings, packaging, and automated tests.</p>
+      <div class="meta">
+        <span>Reviewed version: 0.8.1</span>
+        <span>Report artifact version: 0.8.2</span>
+        <span>Branch: master</span>
+        <span>Scope: current working tree</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="summary-grid" aria-label="Review summary">
+      <div class="metric"><strong>5</strong><span>actionable findings</span></div>
+      <div class="metric"><strong>1 high</strong><span>lifecycle and stale-state risk</span></div>
+      <div class="metric"><strong>268 / 269</strong><span>tests passing in the current tree</span></div>
+      <div class="metric"><strong>0</strong><span>TypeScript errors under strict checking</span></div>
+    </div>
+
+    <section id="findings">
+      <div class="section-head">
+        <h2>Prioritized Findings</h2>
+        <p>Ordered by likely user impact and operational risk.</p>
+      </div>
+      <div class="filters" role="group" aria-label="Filter findings by severity">
+        <button type="button" data-filter="all" aria-pressed="true">All</button>
+        <button type="button" data-filter="high" aria-pressed="false">High</button>
+        <button type="button" data-filter="medium" aria-pressed="false">Medium</button>
+        <button type="button" data-filter="low" aria-pressed="false">Low</button>
+      </div>
+
+      <div class="finding-list">
+        <article class="finding" data-severity="high">
+          <div class="severity">High</div>
+          <div class="finding-body">
+            <h3>Old async work can republish stale positions after a detector restart</h3>
+            <p>The content entry point stops and disposes the active controllers when settings change, but outstanding share-PGN and debug update promises are not canceled or associated with a run generation. When an old promise resolves, it can call <code>publishResult</code> with an obsolete game/position and the old settings/controllers.</p>
+            <p><span class="impact">Impact:</span> toggling settings or navigating while enrichment/analysis is in flight can restore debug UI that was just disabled, display stale overlays, or recreate Stockfish workers through a controller that was already disposed.</p>
+            <div class="evidence"><strong>Evidence:</strong> <code>src/content/index.ts:71-75</code>, <code>src/content/index.ts:80-85</code>, <code>src/content/index.ts:210-216</code>, and async debug continuations at <code>src/content/index.ts:137-151</code>. The restart path disposes the old watcher at <code>src/content/index.ts:288-296</code>, but no generation/abort check guards later callbacks.</div>
+          </div>
+        </article>
+
+        <article class="finding" data-severity="medium">
+          <div class="severity">Medium</div>
+          <div class="finding-body">
+            <h3>The popup silently resets the attack-balance preference</h3>
+            <p><code>attackBalanceOverlay</code> is a real persisted setting used by the content script, but the popup has no control for it and omits it from both form application and form reads. Saving any unrelated popup change normalizes the missing field back to its default value of <code>true</code>.</p>
+            <p><span class="impact">Impact:</span> users who disabled attack-balance badges through existing storage or an earlier UI cannot preserve that choice; a routine Save re-enables the feature without indicating it.</p>
+            <div class="evidence"><strong>Evidence:</strong> declared/defaulted in <code>src/extension/settings.ts:6,23,50</code>; consumed in <code>src/content/index.ts:115-119</code>; absent from <code>popup/index.html</code> and <code>src/popup/index.ts</code>.</div>
+          </div>
+        </article>
+
+        <article class="finding" data-severity="medium">
+          <div class="severity">Medium</div>
+          <div class="finding-body">
+            <h3>Transient share-dialog failures are permanently suppressed for that position</h3>
+            <p>The automation key is inserted before opening/reading the share dialog. It is never removed when the read returns <code>null</code> or rejects, so later mutation and fallback cycles skip the same position forever.</p>
+            <p><span class="impact">Impact:</span> a slow-rendering or temporarily changed Chess.com modal can leave the extension stuck with lower-confidence move-list data until the position key changes or the extension restarts.</p>
+            <div class="evidence"><strong>Evidence:</strong> <code>src/content/index.ts:204-224</code>. The key should represent successful enrichment, or failures should clear it with bounded retry/backoff.</div>
+          </div>
+        </article>
+
+        <article class="finding" data-severity="low">
+          <div class="severity">Low</div>
+          <div class="finding-body">
+            <h3>The returned watcher handle exposes an unbound <code>start</code> method</h3>
+            <p><code>startChessComBoardDetector</code> returns <code>start: watcher.start</code>. For the real <code>PageWatcher</code> class, calling the returned handle's <code>start()</code> changes the method receiver, so internal calls such as <code>this.stop()</code> run against the wrapper object rather than the watcher.</p>
+            <p><span class="impact">Impact:</span> the public restart handle is unreliable even though initial startup and the currently used <code>stop()</code> path work.</p>
+            <div class="evidence"><strong>Evidence:</strong> <code>src/content/index.ts:79-85</code> and instance-state access beginning at <code>src/content/pageWatcher.ts:18</code>. Return <code>start: () =&gt; watcher.start()</code> or bind the method.</div>
+          </div>
+        </article>
+
+        <article class="finding" data-severity="low">
+          <div class="severity">Low</div>
+          <div class="finding-body">
+            <h3>The test suite is red because a packaging assertion no longer matches the build</h3>
+            <p>The popup is bundled with esbuild, so its dependency code is correctly inlined. A manifest test still expects a literal <code>from '../extension/settings.js'</code> import in the generated bundle, which is incompatible with the current build command.</p>
+            <p><span class="impact">Impact:</span> CI cannot provide a clean regression signal, and a genuine failure can be obscured by the known red baseline.</p>
+            <div class="evidence"><strong>Evidence:</strong> <code>package.json</code> bundles <code>src/popup/index.ts</code>; failing assertion at <code>tests/extension/manifest.test.ts:32-36</code>. Current result: 1 failed, 268 passed.</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="verification">
+      <div class="section-head">
+        <h2>Verification</h2>
+        <p>Commands were run against the existing working tree without rebuilding <code>dist</code>.</p>
+      </div>
+      <div class="two-col">
+        <div class="panel">
+          <h3>Automated checks</h3>
+          <div class="status-row"><div class="status-label">TypeScript</div><div><span class="pass">Passed</span> - strict <code>tsc --noEmit</code></div></div>
+          <div class="status-row"><div class="status-label">Vitest</div><div><span class="fail">1 failed</span> - 28 files passed, 1 file failed; 268 tests passed</div></div>
+          <div class="status-row"><div class="status-label">Build command</div><div>Not emitted during review to avoid overwriting user-owned <code>dist</code>; type checking passed and generated bundle shape was inspected.</div></div>
+          <div class="status-row"><div class="status-label">Environment</div><div>Global <code>npm</code> is broken as documented in <code>agent.md</code>; local Vitest and TypeScript entry points were used.</div></div>
+        </div>
+        <div class="panel">
+          <h3>Review boundaries</h3>
+          <ul>
+            <li>Static review of all source modules and extension configuration.</li>
+            <li>Focused concurrency review of Stockfish, eval-bar, live-alert, and share automation.</li>
+            <li>No live Chess.com or Lichess account workflow was exercised.</li>
+            <li>The existing dirty worktree was preserved.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <div class="section-head">
+        <h2>Architecture Assessment</h2>
+        <p>The project is generally well-factored for an extension of this size.</p>
+      </div>
+      <div class="architecture">
+        <div class="arch-item"><strong>Detector layer</strong><p>Clear separation between DOM reading, mode inference, reconciliation, tactical analyzers, and result typing. Fixture coverage is strong.</p></div>
+        <div class="arch-item"><strong>Engine layer</strong><p>Local Stockfish access is isolated behind small interfaces, with cancellation IDs protecting most result application paths.</p></div>
+        <div class="arch-item"><strong>Content layer</strong><p>Feature overlays fail independently, but the central orchestrator needs a run-level lifecycle token to make those boundaries reliable across restarts.</p></div>
+      </div>
+    </section>
+
+    <section id="next-steps">
+      <div class="section-head">
+        <h2>Recommended Order</h2>
+        <p>A small sequence that restores confidence quickly.</p>
+      </div>
+      <div class="panel" style="margin-top:18px">
+        <ol>
+          <li>Add a detector run generation or abort signal and guard every async continuation before publishing or rendering.</li>
+          <li>Add the missing attack-balance popup control and regression coverage for preserving the field while saving another setting.</li>
+          <li>Clear failed share-automation keys and use bounded retry/backoff.</li>
+          <li>Wrap the returned watcher methods so their receiver is stable.</li>
+          <li>Replace the obsolete popup import assertion with a runtime-oriented bundle check, then restore a fully green suite.</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="footer-inner">Generated from the current local workspace. This report does not modify application behavior.</div></footer>
+
+  <script>
+    const buttons = Array.from(document.querySelectorAll('[data-filter]'));
+    const findings = Array.from(document.querySelectorAll('.finding'));
+    for (const button of buttons) {
+      button.addEventListener('click', () => {
+        const filter = button.dataset.filter;
+        for (const candidate of buttons) {
+          candidate.setAttribute('aria-pressed', String(candidate === button));
+        }
+        for (const finding of findings) {
+          finding.classList.toggle('hidden', filter !== 'all' && finding.dataset.severity !== filter);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "chesscom-board-detector",
+  "version": "0.8.7",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "npm run build && vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && tsc -p tsconfig.build.json && esbuild src/content/index.ts src/content/lichessPasteImport.ts --bundle --format=iife --target=es2022 --outdir=dist/content && esbuild src/popup/index.ts --bundle --format=esm --target=es2022 --outdir=dist/popup"
+  },
+  "dependencies": {
+    "chess.js": "^1.0.0-beta.8"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@types/node": "^22.10.2",
+    "esbuild": "^0.21.5",
+    "jsdom": "^24.1.1",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}

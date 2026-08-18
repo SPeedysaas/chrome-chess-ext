@@ -1,16 +1,32 @@
 {
   "manifest_version": 3,
-  "name": "Chess Spy & Analyze",
-  "version": "2.0",
-  "description": "Scans board and adds a Stockfish evaluation bar.",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "name": "Chess.com Board Detector",
+  "version": "0.8.7",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www.chess.com/*",
+    "https://lichess.org/*"
+  ],
   "web_accessible_resources": [
     {
-      "resources": ["stockfish.js"],
-      "matches": ["<all_urls>"]
+      "resources": ["lichess-svgrepo-com.svg", "vendor/stockfish/stockfish.js", "vendor/stockfish/stockfish.wasm"],
+      "matches": ["https://www.chess.com/*"]
     }
   ],
   "action": {
-    "default_popup": "popup.html"
-  }
+    "default_title": "Chess.com Board Detector",
+    "default_popup": "popup/index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.chess.com/*"],
+      "js": ["dist/content/index.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://lichess.org/paste*"],
+      "js": ["dist/content/lichessPasteImport.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }
