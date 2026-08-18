@@ -11,6 +11,9 @@ const evalTopMovesInput = document.querySelector<HTMLInputElement>('#evalTopMove
 const showTopMovesInput = document.querySelector<HTMLInputElement>('#showTopMoves');
 const showMovesButtonInput = document.querySelector<HTMLInputElement>('#showMovesButton');
 const showOpponentMovesOnlyInput = document.querySelector<HTMLInputElement>('#showOpponentMovesOnly');
+const noCaptureBotModeInput = document.querySelector<HTMLInputElement>('#noCaptureBotMode');
+const botSearchDepthInput = document.querySelector<HTMLInputElement>('#botSearchDepth');
+const botCandidateMovesInput = document.querySelector<HTMLInputElement>('#botCandidateMoves');
 const topMovesScaleInput = document.querySelector<HTMLInputElement>('#topMovesScale');
 const liveMoveAlertInput = document.querySelector<HTMLInputElement>('#liveMoveAlert');
 const debounceInput = document.querySelector<HTMLInputElement>('#debounceMs');
@@ -97,6 +100,13 @@ function applySettings(settings: ExtensionSettings): void {
     showOpponentMovesOnlyInput.checked = settings.showOpponentMovesOnly;
   }
 
+  if (noCaptureBotModeInput) {
+    noCaptureBotModeInput.checked = settings.noCaptureBotMode;
+  }
+
+  if (botSearchDepthInput) botSearchDepthInput.value = String(settings.botSearchDepth);
+  if (botCandidateMovesInput) botCandidateMovesInput.value = String(settings.botCandidateMoves);
+
   if (topMovesScaleInput) {
     topMovesScaleInput.value = String(settings.topMovesScale);
   }
@@ -119,7 +129,9 @@ function readFormSettings(): ExtensionSettings {
     evalTopMoves: Number(evalTopMovesInput?.value),
     topMovesScale: Number(topMovesScaleInput?.value),
     debounceMs: Number(debounceInput?.value),
-    fallbackMs: Number(fallbackInput?.value)
+    fallbackMs: Number(fallbackInput?.value),
+    botSearchDepth: Number(botSearchDepthInput?.value),
+    botCandidateMoves: Number(botCandidateMovesInput?.value)
   };
 
   if (enabledInput) {
@@ -156,6 +168,10 @@ function readFormSettings(): ExtensionSettings {
 
   if (showOpponentMovesOnlyInput) {
     settings.showOpponentMovesOnly = showOpponentMovesOnlyInput.checked;
+  }
+
+  if (noCaptureBotModeInput) {
+    settings.noCaptureBotMode = noCaptureBotModeInput.checked;
   }
 
   if (liveMoveAlertInput) {
@@ -202,14 +218,41 @@ function observeSettingSections(): void {
     });
   };
 
+  const visibility = new Map<HTMLElement, { isIntersecting: boolean; ratio: number }>();
   const observer = new IntersectionObserver((entries) => {
-    const visibleEntry = entries
-      .filter((entry) => entry.isIntersecting)
-      .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+    entries.forEach((entry) => {
+      visibility.set(entry.target as HTMLElement, {
+        isIntersecting: entry.isIntersecting,
+        ratio: entry.intersectionRatio
+      });
+    });
 
-    if (visibleEntry) {
-      setCurrentSection((visibleEntry.target as HTMLElement).id);
+    const visibleSections = settingSections.filter((section) => visibility.get(section)?.isIntersecting);
+    if (visibleSections.length === 0) {
+      return;
     }
+
+    // Keep the section whose heading has passed the sticky navigation bar.
+    // This creates a stable hand-off between sections instead of reacting to
+    // whichever IntersectionObserver entry happened to change last.
+    const navBottom = document.querySelector<HTMLElement>('.section-nav')?.getBoundingClientRect().bottom ?? 58;
+    const passedSections = visibleSections.filter((section) => section.getBoundingClientRect().top <= navBottom);
+    const current = passedSections.length > 0 ? passedSections[passedSections.length - 1] : visibleSections[0];
+    if (!current) {
+      return;
+    }
+
+    // In non-layout environments (for example jsdom), geometry is unavailable;
+    // retain the ratio-based fallback for deterministic behavior.
+    if (current && current.getBoundingClientRect().top === 0 && visibleSections.every((section) => section.getBoundingClientRect().top === 0)) {
+      const ratioSection = visibleSections.reduce((best, section) =>
+        (visibility.get(section)?.ratio ?? 0) > (visibility.get(best)?.ratio ?? 0) ? section : best
+      );
+      setCurrentSection(ratioSection.id);
+      return;
+    }
+
+    setCurrentSection(current.id);
   }, { threshold: [0.15, 0.4, 0.75], rootMargin: '-58px 0px 0px 0px' });
 
   settingSections.forEach((section) => observer.observe(section));
