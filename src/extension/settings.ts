@@ -9,6 +9,10 @@ export interface ExtensionSettings {
   showTopMoves: boolean;
   showMovesButton: boolean;
   showOpponentMovesOnly: boolean;
+  botAutoPlay: boolean;
+  noCaptureBotMode: boolean;
+  botSearchDepth: number;
+  botCandidateMoves: number;
   topMovesScale: number;
   liveMoveAlert: boolean;
   debounceMs: number;
@@ -26,6 +30,10 @@ export const DEFAULT_EXTENSION_SETTINGS: ExtensionSettings = {
   showTopMoves: true,
   showMovesButton: true,
   showOpponentMovesOnly: false,
+  botAutoPlay: false,
+  noCaptureBotMode: false,
+  botSearchDepth: 12,
+  botCandidateMoves: 3,
   topMovesScale: 100,
   liveMoveAlert: true,
   debounceMs: 150,
@@ -40,6 +48,10 @@ const MIN_DEBOUNCE_MS = 0;
 const MAX_DEBOUNCE_MS = 1000;
 const MIN_FALLBACK_MS = 1000;
 const MAX_FALLBACK_MS = 60000;
+const MIN_BOT_SEARCH_DEPTH = 4;
+const MAX_BOT_SEARCH_DEPTH = 24;
+const MIN_BOT_CANDIDATE_MOVES = 1;
+const MAX_BOT_CANDIDATE_MOVES = 10;
 
 export function normalizeExtensionSettings(value: Partial<ExtensionSettings> = {}): ExtensionSettings {
   return {
@@ -53,6 +65,10 @@ export function normalizeExtensionSettings(value: Partial<ExtensionSettings> = {
     showTopMoves: value.showTopMoves ?? DEFAULT_EXTENSION_SETTINGS.showTopMoves,
     showMovesButton: value.showMovesButton ?? DEFAULT_EXTENSION_SETTINGS.showMovesButton,
     showOpponentMovesOnly: value.showOpponentMovesOnly ?? DEFAULT_EXTENSION_SETTINGS.showOpponentMovesOnly,
+    botAutoPlay: value.botAutoPlay ?? DEFAULT_EXTENSION_SETTINGS.botAutoPlay,
+    noCaptureBotMode: value.noCaptureBotMode ?? DEFAULT_EXTENSION_SETTINGS.noCaptureBotMode,
+    botSearchDepth: clampNumber(value.botSearchDepth, DEFAULT_EXTENSION_SETTINGS.botSearchDepth, MIN_BOT_SEARCH_DEPTH, MAX_BOT_SEARCH_DEPTH),
+    botCandidateMoves: clampNumber(value.botCandidateMoves, DEFAULT_EXTENSION_SETTINGS.botCandidateMoves, MIN_BOT_CANDIDATE_MOVES, MAX_BOT_CANDIDATE_MOVES),
     topMovesScale: clampNumber(value.topMovesScale, DEFAULT_EXTENSION_SETTINGS.topMovesScale, MIN_TOP_MOVES_SCALE, MAX_TOP_MOVES_SCALE),
     liveMoveAlert: value.liveMoveAlert ?? DEFAULT_EXTENSION_SETTINGS.liveMoveAlert,
     debounceMs: clampNumber(value.debounceMs, DEFAULT_EXTENSION_SETTINGS.debounceMs, MIN_DEBOUNCE_MS, MAX_DEBOUNCE_MS),

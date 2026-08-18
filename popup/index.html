@@ -21,6 +21,7 @@
         <a href="#settings-overlays">Overlays</a>
         <a href="#settings-evaluation">Evaluation</a>
         <a href="#settings-live">Live &amp; advanced</a>
+        <a href="#settings-bots">Bot play</a>
       </nav>
 
       <form id="settings-form">
@@ -111,6 +112,7 @@
           </span>
           <input id="showOpponentMovesOnly" name="showOpponentMovesOnly" type="checkbox">
           </label>
+
         </section>
 
         <section class="settings-section" id="settings-live" aria-labelledby="section-live">
@@ -145,6 +147,26 @@
             <small>Backup scan interval when page changes are missed</small>
           </span>
           <input id="fallbackMs" name="fallbackMs" type="number" min="1000" max="60000" step="500">
+          </label>
+        </section>
+
+        <section class="settings-section" id="settings-bots" aria-labelledby="section-bots">
+          <h2 id="section-bots">Bot play</h2>
+          <label class="switch-row">
+            <span><strong>Stockfish auto-play</strong><small>Automatically plays Stockfish moves in Chess.com computer and bot games</small></span>
+            <input id="botAutoPlay" name="botAutoPlay" type="checkbox">
+          </label>
+          <label class="switch-row">
+            <span><strong>No-capture bot mode</strong><small>Restricts Stockfish suggestions and auto-play to non-capturing moves</small></span>
+            <input id="noCaptureBotMode" name="noCaptureBotMode" type="checkbox">
+          </label>
+          <label class="field-row">
+            <span><strong>Bot search depth</strong><small>Stockfish depth for computer games</small></span>
+            <input id="botSearchDepth" name="botSearchDepth" type="number" min="4" max="24" step="1">
+          </label>
+          <label class="field-row">
+            <span><strong>Bot candidate moves</strong><small>How many legal bot moves Stockfish evaluates</small></span>
+            <input id="botCandidateMoves" name="botCandidateMoves" type="number" min="1" max="10" step="1">
           </label>
         </section>
 

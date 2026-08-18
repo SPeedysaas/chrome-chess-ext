@@ -1081,7 +1081,7 @@ describe('eval bar overlay', () => {
     await controller.update(evalResult({ fenPlacement: '8/8/8/8/8/8/P7/4K2k' }));
     emitEngineUpdate(onUpdate, [{ depth: 8, multipv: 1, score: { type: 'cp', value: 100 }, move: 'e2e4' }]);
     const firstButton = document.querySelector<HTMLButtonElement>('[data-chesscom-top-move-reveal=true]');
-    firstButton?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 1010, clientY: 870 }));
+    firstButton?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, ctrlKey: true, clientX: 1010, clientY: 870 }));
     document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 950, clientY: 820 }));
     document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
 
@@ -1092,14 +1092,14 @@ describe('eval bar overlay', () => {
     emitEngineUpdate(onUpdate, [{ depth: 8, multipv: 1, score: { type: 'cp', value: 40 }, move: 'c2c4' }]);
 
     const secondButton = document.querySelector<HTMLButtonElement>('[data-chesscom-top-move-reveal=true]');
-    expect(secondButton).not.toBe(firstButton);
+    expect(secondButton).toBe(firstButton);
     expect(secondButton?.style.left).toBe('948px');
     expect(secondButton?.style.top).toBe('816px');
 
     controller.dispose();
   });
 
-  it('drags the show moves button with pointer input without revealing moves', async () => {
+  it('only drags the show moves button with pointer input while Control is held', async () => {
     document.body.innerHTML = '<wc-chess-board></wc-chess-board>';
     const board = document.querySelector<HTMLElement>('wc-chess-board');
     board!.getBoundingClientRect = () => ({
@@ -1131,6 +1131,13 @@ describe('eval bar overlay', () => {
     emitEngineUpdate(onUpdate, [{ depth: 8, multipv: 1, score: { type: 'cp', value: 100 }, move: 'e2e4' }]);
     const button = document.querySelector<HTMLButtonElement>('[data-chesscom-top-move-reveal=true]');
     button?.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 1010, clientY: 870 }));
+    document.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 980, clientY: 840 }));
+    document.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
+
+    expect(button?.style.left).toBe('1008px');
+    expect(button?.style.top).toBe('866px');
+
+    button?.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, ctrlKey: true, clientX: 1010, clientY: 870 }));
     document.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 950, clientY: 820 }));
     document.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
     button?.click();
@@ -1174,7 +1181,7 @@ describe('eval bar overlay', () => {
     await firstController.update(evalResult({ fenPlacement: '8/8/8/8/8/8/P7/4K2k' }));
     emitEngineUpdate(onUpdate, [{ depth: 8, multipv: 1, score: { type: 'cp', value: 100 }, move: 'e2e4' }]);
     const firstButton = document.querySelector<HTMLButtonElement>('[data-chesscom-top-move-reveal=true]');
-    firstButton?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 1010, clientY: 870 }));
+    firstButton?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, ctrlKey: true, clientX: 1010, clientY: 870 }));
     document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 950, clientY: 820 }));
     document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
 

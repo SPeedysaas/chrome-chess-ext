@@ -3,7 +3,7 @@ import type { DetectorResult, Orientation } from '../detector/types';
 import type { GameCache } from '../detector/gameCache';
 import { buildLiveAnalysisFen } from '../engine/liveFen';
 import { resolveLiveUserColor, storeManualLiveUserColor } from '../engine/livePlayerColor';
-import { LocalStockfishEngine } from '../engine/localStockfish';
+import { LocalStockfishEngine, type StockfishSearchOptions } from '../engine/localStockfish';
 import type { EngineLine, EngineScore } from '../engine/stockfishUci';
 import { createLivePlayerColorPrompt, type LivePlayerColorPromptApi } from './livePlayerColorPrompt';
 import { palette, radius, shadow } from './styleTokens';
@@ -95,8 +95,8 @@ interface DragPoint {
 }
 
 export interface EvalBarEngine {
-  analyze: (fen: string, depth?: number) => Promise<EngineLine[]>;
-  analyzeContinuously?: (fen: string, onUpdate: (lines: EngineLine[]) => void) => { stop: () => void };
+  analyze: (fen: string, depth?: number, searchOptions?: StockfishSearchOptions) => Promise<EngineLine[]>;
+  analyzeContinuously?: (fen: string, onUpdate: (lines: EngineLine[]) => void, searchOptions?: StockfishSearchOptions) => { stop: () => void };
   dispose: () => void;
 }
 
@@ -117,6 +117,9 @@ export interface EvalBarControllerOptions {
   showMovesButton?: boolean;
   showOpponentMovesOnly?: boolean;
   topMovesScale?: number;
+  noCaptureBotMode?: boolean;
+  botSearchDepth?: number;
+  botCandidateMoves?: number;
 }
 
 export type EvalBarAnalysisMode = 'continuous' | 'bounded';
@@ -174,6 +177,9 @@ export function createEvalBarController(options: EvalBarControllerOptions = {}):
   const showMovesButton = options.showMovesButton ?? true;
   const showOpponentMovesOnly = options.showOpponentMovesOnly ?? false;
   const topMovesScale = normalizeTopMovesScale(options.topMovesScale);
+  const noCaptureBotMode = options.noCaptureBotMode ?? false;
+  const botSearchDepth = options.botSearchDepth ?? 12;
+  const botCandidateMoves = options.botCandidateMoves ?? topMoves;
   const playerColorPrompt = options.promptFactory?.() ?? createLivePlayerColorPrompt(root);
   let engine: EvalBarEngine | null = null;
   let scoreEngine: EvalBarEngine | null = null;
@@ -194,8 +200,8 @@ export function createEvalBarController(options: EvalBarControllerOptions = {}):
 
   const ensureEngine = (): EvalBarEngine => {
     engine ??= options.engineFactory?.() ?? new LocalStockfishEngine({
-      multipv: topMoves,
-      depth: 10,
+      multipv: isChessComBotGame() ? botCandidateMoves : topMoves,
+      depth: isChessComBotGame() ? botSearchDepth : 10,
       minimumUpdateDepth: 4
     });
     return engine;
@@ -204,7 +210,7 @@ export function createEvalBarController(options: EvalBarControllerOptions = {}):
   const ensureScoreEngine = (): EvalBarEngine => {
     scoreEngine ??= options.engineFactory?.() ?? new LocalStockfishEngine({
       multipv: 1,
-      depth: 10,
+      depth: isChessComBotGame() ? botSearchDepth : 10,
       minimumUpdateDepth: 4
     });
     return scoreEngine;
@@ -353,6 +359,9 @@ export function createEvalBarController(options: EvalBarControllerOptions = {}):
 
   const controller: EvalBarController = {
     async update(result: DetectorResult): Promise<void> {
+      const moveSearchOptions: StockfishSearchOptions = {
+        noCaptures: noCaptureBotMode && isChessComBotGame()
+      };
       if (result.gameId !== activeGameId) {
         activeGameId = result.gameId;
         activeSession?.stop();
@@ -539,7 +548,8 @@ export function createEvalBarController(options: EvalBarControllerOptions = {}):
         };
         activeSession = currentEngine.analyzeContinuously(
           analysisTargetFen,
-          (lines) => applyLines(analysisId, result, analysisTargetFen, visibleFen, lines, 'continuous', result.orientation)
+          (lines) => applyLines(analysisId, result, analysisTargetFen, visibleFen, lines, 'continuous', result.orientation),
+          moveSearchOptions
         );
         return;
       }
@@ -569,7 +579,7 @@ export function createEvalBarController(options: EvalBarControllerOptions = {}):
           : {})
       };
       for (const depth of evalDepths) {
-        const lines = await currentEngine.analyze(analysisTargetFen, depth);
+        const lines = await currentEngine.analyze(analysisTargetFen, depth, moveSearchOptions);
         applyLines(analysisId, result, analysisTargetFen, visibleFen, lines, 'bounded', result.orientation);
 
         if (analysisId !== activeAnalysisId || analysisTargetFen !== activeFen) {
@@ -605,6 +615,16 @@ export function createEvalBarController(options: EvalBarControllerOptions = {}):
   };
 
   return controller;
+}
+
+export function isChessComBotGame(url = globalThis.location?.href ?? ''): boolean {
+  try {
+    const { hostname, pathname } = new URL(url);
+    return /(^|\.)chess\.com$/i.test(hostname)
+      && /^\/play\/(?:computer|bots?|coach)(?:\/|$)/i.test(pathname);
+  } catch {
+    return false;
+  }
 }
 
 export function updateEvalBarOverlay(score: EngineScore, root: ParentNode = document, orientation?: Orientation): void {
@@ -892,13 +912,18 @@ function attachTopMovesDragHandlers(panel: HTMLElement): void {
 function attachDragHandlers(
   element: HTMLElement,
   handlers: {
+    canStart?: (event: MouseEvent) => boolean;
     onStart?: () => void;
     onMove?: (left: number, top: number) => void;
-    onEnd?: (dragged: boolean) => void;
+    onEnd?: (dragged: boolean, left: number, top: number) => void;
   }
 ): void {
   const startDrag = (event: MouseEvent): void => {
     if (event.type === 'mousedown' && event.button !== 0) {
+      return;
+    }
+
+    if (handlers.canStart && !handlers.canStart(event)) {
       return;
     }
 
@@ -919,6 +944,8 @@ function attachDragHandlers(
     const moveEventType = event.type === 'pointerdown' ? 'pointermove' : 'mousemove';
     const upEventType = event.type === 'pointerdown' ? 'pointerup' : 'mouseup';
     let dragged = false;
+    let currentLeft = startLeft;
+    let currentTop = startTop;
     handlers.onStart?.();
     event.preventDefault();
 
@@ -931,6 +958,8 @@ function attachDragHandlers(
       const nextLeft = Math.round(startLeft + currentPoint.x - startPoint.x);
       const nextTop = Math.round(startTop + currentPoint.y - startPoint.y);
       dragged = true;
+      currentLeft = nextLeft;
+      currentTop = nextTop;
       element.style.left = `${nextLeft}px`;
       element.style.top = `${nextTop}px`;
       handlers.onMove?.(nextLeft, nextTop);
@@ -942,7 +971,7 @@ function attachDragHandlers(
       if (event.type === 'pointerdown') {
         delete element.dataset.chesscomPointerDragActive;
       }
-      handlers.onEnd?.(dragged);
+      handlers.onEnd?.(dragged, currentLeft, currentTop);
     };
 
     doc.addEventListener(moveEventType, onMove);
@@ -1252,19 +1281,22 @@ function squareCenter(square: string, boardRect: DOMRect, orientation: Orientati
 }
 
 function updateTopMoveRevealButton(root: ParentNode, _orientation: Orientation | undefined, onClick: () => void): void {
-  removeTopMoveRevealButton(root);
-
   const board = boardElement(root);
   if (!board) {
     return;
   }
 
   const boardRect = board.getBoundingClientRect();
-  const button = ownerDocument(root).createElement('button');
+  const existingButton = root.querySelector<HTMLButtonElement>(topMoveRevealButtonSelector);
+  const button = existingButton ?? ownerDocument(root).createElement('button');
   button.type = 'button';
   button.textContent = 'Show moves';
   button.setAttribute(topMoveRevealButtonAttribute, 'true');
-  button.addEventListener('click', onClick);
+  button.onclick = onClick;
+  if (existingButton) {
+    return;
+  }
+
   const savedPosition = savedShowMovesButtonPosition(root);
   button.style.position = 'absolute';
   button.style.left = `${savedPosition?.left ?? defaultSideOverlayLeft(boardRect, root, showMovesButtonApproxWidth)}px`;
@@ -1276,6 +1308,8 @@ function updateTopMoveRevealButton(root: ParentNode, _orientation: Orientation |
   button.style.padding = '7px 12px';
   button.style.boxShadow = shadow.raised;
   button.style.cursor = 'pointer';
+  button.style.touchAction = 'none';
+  button.style.willChange = 'left, top';
   button.style.font = '800 12px/1 system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
   button.style.zIndex = pageOverlayZIndex;
   attachShowMovesButtonDragHandlers(button);
@@ -1284,11 +1318,10 @@ function updateTopMoveRevealButton(root: ParentNode, _orientation: Orientation |
 
 function attachShowMovesButtonDragHandlers(button: HTMLElement): void {
   attachDragHandlers(button, {
-    onMove: (left, top) => {
-      saveShowMovesButtonPosition(button, left, top);
-    },
-    onEnd: (dragged) => {
+    canStart: (event) => event.ctrlKey,
+    onEnd: (dragged, left, top) => {
       if (dragged) {
+        saveShowMovesButtonPosition(button, left, top);
         button.dataset.chesscomSuppressClick = 'true';
       }
     }

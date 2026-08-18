@@ -42,6 +42,28 @@ describe('LocalStockfishEngine', () => {
     expect(worker.messages.at(-1)).toBe('go depth 4');
   });
 
+  it('restricts no-capture searches to legal quiet moves', () => {
+    const worker = new FakeWorker();
+    const engine = new LocalStockfishEngine({ createWorker: () => worker, depth: 12 });
+
+    void engine.analyze('7k/8/8/3p4/4P3/8/8/K7 w - - 0 1', 12, { noCaptures: true });
+
+    const go = worker.messages.at(-1) ?? '';
+    expect(go).toContain('go depth 12 searchmoves');
+    expect(go).toContain('e4e5');
+    expect(go).not.toContain('e4d5');
+  });
+
+  it('does not start Stockfish when no legal non-capturing move exists', async () => {
+    const worker = new FakeWorker();
+    const engine = new LocalStockfishEngine({ createWorker: () => worker });
+
+    const lines = await engine.analyze('7k/8/8/8/8/5q2/6q1/7K w - - 0 1', 12, { noCaptures: true });
+
+    expect(lines).toEqual([]);
+    expect(worker.messages).toEqual([]);
+  });
+
   it('keeps a newer bounded search alive when a stopped search emits a late bestmove', async () => {
     const worker = new FakeWorker();
     const engine = new LocalStockfishEngine({

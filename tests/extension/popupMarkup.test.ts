@@ -52,6 +52,24 @@ describe('popup markup', () => {
     expect(html).toContain('Show opponent moves only');
   });
 
+  it('includes a no-capture bot mode toggle', () => {
+    const html = readFileSync('popup/index.html', 'utf8');
+
+    expect(html).toContain('id="noCaptureBotMode"');
+    expect(html).toContain('name="noCaptureBotMode"');
+    expect(html).toContain('No-capture bot mode');
+  });
+
+  it('includes a dedicated bot play settings section', () => {
+    const html = readFileSync('popup/index.html', 'utf8');
+
+    expect(html).toContain('id="settings-bots"');
+    expect(html).toContain('id="botAutoPlay"');
+    expect(html).toContain('Stockfish auto-play');
+    expect(html).toContain('id="botSearchDepth"');
+    expect(html).toContain('id="botCandidateMoves"');
+  });
+
   it('includes an alternative move popup size option', () => {
     const html = readFileSync('popup/index.html', 'utf8');
 

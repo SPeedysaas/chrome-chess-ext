@@ -19,6 +19,7 @@ import { runDetectionCycle } from '../detector/pipeline';
 import { DEFAULT_EXTENSION_SETTINGS, normalizeExtensionSettings, type ExtensionSettings } from '../extension/settings';
 import { updateLichessImportButton } from './lichessImportButton';
 import type { DetectorResult } from '../detector/types';
+import { createBotPlayController, type BotPlayController } from './botPlay';
 
 interface WatcherHandle {
   start: () => void;
@@ -47,7 +48,8 @@ export interface StartDetectorOptions {
   runDetection?: typeof runDetectionCycle;
   readSharePgn?: typeof readShareModalPgn;
   liveMoveAlertFactory?: (cache: GameCache, promptFactory?: () => ReturnType<typeof createLivePlayerColorPrompt>) => LiveMoveAlertController;
-  evalBarFactory?: (options: Pick<EvalBarControllerOptions, 'showTopMoves' | 'showMovesButton' | 'showOpponentMovesOnly' | 'topMoves' | 'topMovesScale'>) => EvalBarController;
+  evalBarFactory?: (options: Pick<EvalBarControllerOptions, 'showTopMoves' | 'showMovesButton' | 'showOpponentMovesOnly' | 'topMoves' | 'topMovesScale' | 'noCaptureBotMode' | 'botSearchDepth' | 'botCandidateMoves'>) => EvalBarController;
+  botPlayFactory?: () => BotPlayController;
 }
 
 export function startChessComBoardDetector(options: StartDetectorOptions = {}): WatcherHandle | null {
@@ -68,9 +70,17 @@ export function startChessComBoardDetector(options: StartDetectorOptions = {}): 
     showMovesButton: settings.showMovesButton,
     showOpponentMovesOnly: settings.showOpponentMovesOnly,
     topMoves: settings.evalTopMoves,
-    topMovesScale: settings.topMovesScale
+    topMovesScale: settings.topMovesScale,
+    noCaptureBotMode: settings.noCaptureBotMode,
+    botSearchDepth: settings.botSearchDepth,
+    botCandidateMoves: settings.botCandidateMoves
   };
   const evalBar = options.evalBarFactory?.(evalBarOptions) ?? createEvalBarController(evalBarOptions);
+  const botPlay = options.botPlayFactory?.() ?? createBotPlayController({
+    enabled: settings.botAutoPlay,
+    noCaptures: settings.noCaptureBotMode,
+    depth: settings.botSearchDepth
+  });
   const watcherFactory = options.watcherFactory ?? ((watcherOptions) => new PageWatcher(watcherOptions));
   const shareAutomationState: ShareAutomationState = {
     completedKeys: new Set<string>(),
@@ -91,9 +101,9 @@ export function startChessComBoardDetector(options: StartDetectorOptions = {}): 
       const currentGeneration = generation;
       const isCurrent = (): boolean => active && generation === currentGeneration;
       const result = runDetection(cache);
-      publishResult(result, settings, liveMoveAlert, evalBar, isCurrent);
+      publishResult(result, settings, liveMoveAlert, evalBar, botPlay, isCurrent);
 
-      maybeEnrichWithSharePgn(result, readSharePgn, shareAutomationState, settings, liveMoveAlert, evalBar, isCurrent);
+      maybeEnrichWithSharePgn(result, readSharePgn, shareAutomationState, settings, liveMoveAlert, evalBar, botPlay, isCurrent);
     }
   });
 
@@ -112,6 +122,7 @@ export function startChessComBoardDetector(options: StartDetectorOptions = {}): 
       watcher.stop();
       liveMoveAlert.dispose();
       evalBar.dispose();
+      botPlay.dispose();
     }
   };
 }
@@ -121,6 +132,7 @@ function publishResult(
   settings: ExtensionSettings,
   liveMoveAlert: LiveMoveAlertController,
   evalBar: EvalBarController,
+  botPlay: BotPlayController,
   isActive: () => boolean
 ): void {
   if (!isActive()) {
@@ -133,6 +145,7 @@ function publishResult(
     settings.evalBar ? evalBar.getDebugState() : { status: 'disabled' }
   );
   let evalBarUpdate: Promise<void> | null = null;
+  void runAsyncFeatureUpdate('Bot play update', () => botPlay.update(result));
 
   if (settings.pinOverlay) {
     runFeatureUpdate('Pin overlay update', () => updatePinOverlay(result));
@@ -238,6 +251,7 @@ function maybeEnrichWithSharePgn(
   settings: ExtensionSettings,
   liveMoveAlert: LiveMoveAlertController,
   evalBar: EvalBarController,
+  botPlay: BotPlayController,
   isActive: () => boolean
 ): void {
   if (!shouldReadSharePgn(result)) {
@@ -266,7 +280,7 @@ function maybeEnrichWithSharePgn(
 
       state.completedKeys.add(key);
       state.failures.delete(key);
-      publishResult(mergeShareGame(result, shareGame), settings, liveMoveAlert, evalBar, isActive);
+      publishResult(mergeShareGame(result, shareGame), settings, liveMoveAlert, evalBar, botPlay, isActive);
     })
     .catch((error: unknown) => {
       if (isActive()) {
